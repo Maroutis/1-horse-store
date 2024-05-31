@@ -2,5 +2,7 @@
 src = "src"
 out = "out"
 libs = ["lib"]
-
+ffi = true # @note allows you to execute an arbitrary shell command and capture the output. https://book.getfoundry.sh/forge/differential-ffi-testing
+evm_version = 'shanghai' # @note huff tests defaults to wrong evm version (usually Paris version) have to mention the evm version to shanghai which has the PUSH0 opcode
+remappings = ['foundry-huff/=lib/foundry-huff/src', 'openzeppelin/=lib/openzeppelin-contracts/']
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

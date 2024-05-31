@@ -1,0 +1,74 @@
+// send Calldata --> function dispatch --> function
+
+
+/* Interface */
+#define function updateHorseNumber(uint256) nonpayable returns()
+#define function readNumberOfHorses() view returns(uint256)
+
+#define constant NUMBER_OF_HORSES_STORAGE_SLOT = FREE_STORAGE_POINTER() // assign NUMBER_OF_HORSES_STORAGE_SLOT to slot 0 (the storage slot that is open)
+
+// this is how you define a macro/function in huff
+// to compile huffc src/horseStoreV1/HorseStore.huff
+// @note to compile with bytecode huffc src/horseStoreV1/HorseStore.huff -b = 60008060093d393df3
+// when you COMPILE a smart contract there are three sections : Contract creation bytecode, runtime bytecode, and metadata bytecode. SOlidity has the INVALID opcode to differeciate between these sections
+// @note huffc src/horseStoreV1/HorseStore.huff --bin-runtime gives only runtime code
+#define macro MAIN() = takes(0) returns(0) {
+    0x00   // Huff knows that this is a push0
+    calldataload // loads the first 32 bytes
+    0xe0  // cast to-base 224 hex can do also with dec (for decimals)
+    shr
+    dup1
+    __FUNC_SIG(updateHorseNumber)
+    eq
+    updateJump  // [updateHorseNumberProgramCounter, true/false, functionSelector]
+    jumpi       // [functionSelector]
+
+    // readNumber of horses
+    // @note Solidity will have a dup opcode here huff is more efficient
+    __FUNC_SIG(readNumberOfHorses) // [0xe026c017, functionSelector]
+    eq         // [true/false]
+    readJump   // [readJumpProgramCounter, true/false]
+    jumpi      // []
+    0x00 0x00 revert  // if we dont get a valid jump dest we dont want the program to continue running and executes the jumpdest
+
+
+
+    updateJump:
+        SET_NUMBER_OF_HORSES()
+    
+    readJump:
+        GET_NUMBER_OF_HORSES()
+
+    // sstore
+    // jumpdest
+    // 0
+    // sload
+    // 0
+    // mstore
+    // 0
+    // 0
+    // return
+    // revert
+
+}
+
+// 0xcdfead2e0000000000000000000000000000000000000000000000000000000000000007
+#define macro SET_NUMBER_OF_HORSES() = takes(0) returns(0) {
+    0x04                                // [4]
+    calldataload                        // [input]
+    [NUMBER_OF_HORSES_STORAGE_SLOT]     // [NUMBER_OF_HORSES_STORAGE_SLOT= 0x00, input] does a push1 basically
+    sstore
+    stop                                // if you dont call stop it will continue to execute
+}
+
+// 0xe026c0170000000000000000000000000000000000000000000000000000000000000000
+#define macro GET_NUMBER_OF_HORSES() = takes(0) returns(0) {
+    [NUMBER_OF_HORSES_STORAGE_SLOT]    // [key]
+    sload                              // [value]
+    0x00                               // [0, value]
+    mstore                             // [] // memory: [value]
+    0x20
+    0x00 
+    return
+
+}
